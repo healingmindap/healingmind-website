@@ -960,3 +960,46 @@ nav.main-nav a.nav-login { white-space: nowrap; }
   nav.main-nav ul { gap: 13px; }
   nav.main-nav a { font-size: .86rem; }
 }
+
+/* ---------- Social: YouTube + Instagram ---------- */
+.ft-social a { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
+.ft-social svg { flex: none; }
+.social-sec { background: linear-gradient(180deg, var(--cream, #faf7f0), #fff); }
+.social-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 26px; align-items: stretch; }
+.yt-card, .ig-card { background: #fff; border-radius: 18px; box-shadow: 0 10px 30px rgba(46,70,59,.08); overflow: hidden; border: 1px solid rgba(73,104,88,.12); }
+.yt-frame { position: relative; aspect-ratio: 16 / 9; background: #e8efe9; }
+.yt-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.yt-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; flex-wrap: wrap; }
+.yt-foot span { display: inline-flex; align-items: center; gap: 8px; color: var(--text-soft); font-size: .92rem; }
+.yt-foot svg { color: #e62117; }
+.ig-card { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.ig-top { display: flex; align-items: center; gap: 12px; }
+.ig-top img { width: 52px; height: 52px; border-radius: 50%; padding: 3px; background: linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7); object-fit: contain; background-clip: padding-box; border: 2px solid transparent; box-shadow: 0 0 0 2px #fff inset; }
+.ig-top b { display: block; color: var(--forest); word-break: break-all; }
+.ig-top small { color: var(--text-soft); }
+.ig-card p { color: var(--text-soft); font-size: .95rem; margin: 0; }
+.ig-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ig-tiles span { aspect-ratio: 1; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: .8rem; font-weight: 600; color: var(--forest);
+  background: linear-gradient(135deg, #eaf3ee, #fdf6e7); }
+.ig-btn { background: linear-gradient(45deg,#f09433,#dc2743 55%,#bc1888); border: 0; color: #fff !important; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
+.ig-btn:hover { filter: brightness(1.05); }
+.yt-btn2 { display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
+@media (max-width: 860px) { .social-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Staff portal: live mode ---------- */
+.st-live-banner { background: #e8f5ec; border: 1px solid #b9dcc6; color: #23553a; border-radius: 10px; padding: 9px 14px; font-size: .88rem; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.st-live-banner .st-link { margin-left: auto; }
+.st-loading { text-align: center; padding: 60px 10px; color: var(--text-soft); }
+.st-toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: var(--forest, #2e463b); color: #fff; padding: 11px 20px; border-radius: 30px; font-size: .9rem; z-index: 9999; box-shadow: 0 8px 24px rgba(0,0,0,.18); transition: opacity .3s; pointer-events: none; }
+.st-toast.bad { background: #a33a2a; }
+.st-sections { display: flex; gap: 8px; margin: 4px 0 18px; flex-wrap: wrap; }
+.st-sections button { border: 1px solid rgba(73,104,88,.25); background: #fff; border-radius: 30px; padding: 9px 18px; font: inherit; font-weight: 600; color: var(--forest); cursor: pointer; }
+.st-sections button.on { background: var(--forest, #2e463b); color: #fff; border-color: transparent; }
+.st-jobs { display: grid; gap: 12px; margin-top: 14px; }
+.st-job { display: flex; justify-content: space-between; gap: 16px; padding: 16px; border: 1px solid rgba(73,104,88,.15); border-radius: 12px; background: #fff; flex-wrap: wrap; }
+.st-job.off { opacity: .65; }
+.st-job small { display: block; color: var(--gold, #C9A227); font-weight: 600; margin: 4px 0; }
+.st-job p { margin: 0; color: var(--text-soft); font-size: .92rem; white-space: pre-line; }
+.st-job-btns { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.st-check { display: flex !important; align-items: center; gap: 8px; flex-direction: row !important; }
+.st-check input { width: auto !important; }
