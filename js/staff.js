@@ -1,23 +1,22 @@
 /* ============================================================
    Healing Mind — STAFF PORTAL (staff.html)
-   Roles:  admin      → everything
+   Roles:  admin      → everything + career openings
            reception  → all appointments (patient remarks hidden)
            doctor     → only their own appointments, with remarks
 
-   ⚠️ DEMO MODE: appointments are saved in THIS browser only
-   (localStorage). Before real patient use, connect a secure
-   database (e.g. Supabase) so data is shared across devices and
-   protected by real logins. Passwords checked in the browser are
-   NOT real security — anyone technical can bypass them.
+   LIVE MODE (BASIC.liveDataUrl filled in content/1-basic-info.js):
+     logins are checked by the clinic's Google Sheet connector and
+     every device sees the same real appointments.
+   NOT CONNECTED: works only inside this browser (for trying out).
    ============================================================ */
 
 (function () {
   if (document.body.dataset.page !== "staff") return;
 
-  /* ---------- accounts (username → role) ----------
-     Passwords are stored only as fingerprints.
-     Doctor usernames = the "bookAs" name in content/12-team.js, in small letters. */
-  const ACCOUNTS = {
+  const LIVE = HMApi.on();
+
+  /* local-only fallback accounts (used ONLY when the Google Sheet is not connected) */
+  const LOCAL_ACCOUNTS = {
     admin:     { role: "admin",     label: "Admin",     key: "1147ee61b91d4c" },
     reception: { role: "reception", label: "Reception", key: "88f4bd84563fe" },
     pragya:    { role: "doctor",    label: "Pragya",    key: "520f63a5e5a48" },
@@ -33,11 +32,10 @@
   const doctorFullName = short => (DOCTORS.find(d => (d.bookAs || "").toLowerCase() === short) || {}).name || short;
   const STATUSES = ["Requested", "Confirmed", "Completed", "Cancelled", "No-show"];
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  // local dates (not UTC) — important for India, which is ahead of UTC
   const iso = x => x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
   const today = () => iso(new Date());
   const addDays = (d, n) => { const x = new Date(d + "T00:00:00"); x.setDate(x.getDate() + n); return iso(x); };
-  const fmtDate = d => d ? new Date(d + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "—";
+  const fmtDate = d => d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : (d || "—");
 
   /* ---------- session ---------- */
   const ss = {
@@ -45,52 +43,66 @@
     set(v) { try { sessionStorage.setItem("hm_staff", JSON.stringify(v)); } catch (e) {} },
     clear() { try { sessionStorage.removeItem("hm_staff"); } catch (e) {} }
   };
+  // remove old demo entries left in this browser by earlier versions
+  try {
+    if (localStorage.getItem("hm_demo_seeded")) {
+      HMStore.save(HMStore.all().filter(a => !a.demo));
+      localStorage.removeItem("hm_demo_seeded");
+    }
+  } catch (e) {}
 
-  /* ---------- demo data (only if nothing stored yet) ---------- */
-  function seedIfEmpty() {
-    let seeded = false;
-    try { seeded = localStorage.getItem("hm_demo_seeded") === "1"; } catch (e) {}
-    if (seeded) return;
-    try { localStorage.setItem("hm_demo_seeded", "1"); } catch (e) {}
-    const t = today();
-    const P = DOCTORS[0] ? DOCTORS[0].name : "Pragya Rakesh Singh";
-    const Q = DOCTORS[1] ? DOCTORS[1].name : "Pooja Gahlot";
-    const demo = [
-      [-6, "Ananya K. (demo)", "Anxiety", P, "In-person", "Morning (10 am – 1 pm)", "11:00", "Completed", "First visit. Panic attacks while travelling."],
-      [-3, "Rahul M. (demo)", "Addiction Management", Q, "Online (video call)", "Evening (4 pm – 8 pm)", "18:00", "Completed", "Wants to reduce drinking. Prefers evening slots."],
-      [-1, "Sneha P. (demo)", "Depression", P, "In-person", "Afternoon (1 pm – 4 pm)", "14:30", "No-show", ""],
-      [0, "Vikram J. (demo)", "Anger Management", P, "In-person", "Morning (10 am – 1 pm)", "10:30", "Confirmed", "Referred by family doctor."],
-      [0, "Meera D. (demo)", "BPD (Borderline Personality Disorder)", Q, "Online (video call)", "Afternoon (1 pm – 4 pm)", "15:00", "Confirmed", "Follow-up session; DBT skills practice."],
-      [0, "Karan S. (demo)", "Phobia", "Any available psychologist", "In-person", "Evening (4 pm – 8 pm)", "", "Requested", "Fear of heights, needs help before a work trip."],
-      [1, "Priya & Amit (demo)", "Marriage Counselling", P, "In-person", "Evening (4 pm – 8 pm)", "17:00", "Confirmed", "Pre-marriage counselling, wedding in March."],
-      [1, "Farhan A. (demo)", "Trauma Healing", Q, "Online (video call)", "Morning (10 am – 1 pm)", "", "Requested", "Prefers a female therapist."],
-      [2, "Neha R. (demo)", "Anxiety", "Any available psychologist", "Online (video call)", "Morning (10 am – 1 pm)", "", "Requested", "Exam stress, final year student."],
-      [3, "Sanjay T. (demo)", "Addiction Management", Q, "Online (video call)", "Evening (4 pm – 8 pm)", "19:00", "Confirmed", "Gaming addiction, parent will join."],
-      [5, "Isha V. (demo)", "Depression", P, "In-person", "Afternoon (1 pm – 4 pm)", "13:30", "Confirmed", ""],
-      [6, "Rohit N. (demo)", "Not sure / Other", "Any available psychologist", "Phone call", "Morning (10 am – 1 pm)", "", "Cancelled", "Would like help with: Sleep Disorders"]
-    ];
-    demo.forEach((d, i) => HMStore.add({
-      name: d[1], phone: "+91 90000 000" + String(10 + i), email: "", service: d[2], doctor: d[3],
-      branch: d[4] === "In-person" ? (BRANCHES[0] ? BRANCHES[0].name : "Chinchwad Centre") : "Online",
-      mode: d[4], date: addDays(t, d[0]), timeWindow: d[5], time: d[6], status: d[7], message: d[8],
-      source: i % 4 === 3 ? "Phone" : "Website", demo: true
-    }));
+  /* ---------- data layer ---------- */
+  let DATA = [], JOBS = [], loading = false, lastLoad = null;
+
+  async function api(body) {
+    const res = await HMApi.post(Object.assign({ token: user && user.token }, body));
+    if (!res.ok && res.relogin) { ss.clear(); user = null; renderLogin("Your session ended — please log in again."); throw new Error("relogin"); }
+    if (!res.ok) throw new Error(res.error || "Something went wrong");
+    return res;
   }
+  const Store = {
+    async load() {
+      if (LIVE) DATA = (await api({ action: "list" })).appointments;
+      else DATA = HMStore.all();
+      lastLoad = new Date();
+    },
+    async update(id, patch) { if (LIVE) await api({ action: "update", id, patch }); else HMStore.update(id, patch); },
+    async create(d) { if (LIVE) await api({ action: "create", data: d }); else HMStore.add(d); },
+    async remove(id) { if (LIVE) await api({ action: "delete", id }); else HMStore.remove(id); },
+    async jobs() { JOBS = LIVE ? (await api({ action: "jobs" })).openings : []; },
+    async jobSave(d) { await api({ action: "jobSave", data: d }); },
+    async jobDelete(id) { await api({ action: "jobDelete", id }); }
+  };
+  const get = id => DATA.find(a => a.id === id);
 
   /* ---------- state ---------- */
   const app = document.getElementById("staff-app");
   let user = ss.get();
-  let view = { tab: "today", doctor: "all", status: "all", q: "" };
+  let view = { section: "appts", tab: "today", doctor: "all", status: "all", q: "" };
+  let refreshTimer = null;
 
+  const myDoctor = () => user.doctor || doctorFullName(user.username);
   function visible(list) {
-    if (user.role === "doctor") list = list.filter(a => a.doctor === doctorFullName(user.username));
+    if (user.role === "doctor") list = list.filter(a => a.doctor === myDoctor());
     return list;
   }
-  const canSeeRemarks = a => user.role === "admin" || (user.role === "doctor" && a.doctor === doctorFullName(user.username));
+  const canSeeRemarks = a => !a.remarksHidden && (user.role === "admin" || (user.role === "doctor" && a.doctor === myDoctor()));
   const canManage = () => user.role === "admin" || user.role === "reception";
+
+  function toast(msg, bad) {
+    let t = document.getElementById("st-toast");
+    if (!t) { t = document.createElement("div"); t.id = "st-toast"; document.body.appendChild(t); }
+    t.className = "st-toast" + (bad ? " bad" : ""); t.textContent = msg; t.style.opacity = 1;
+    clearTimeout(t._h); t._h = setTimeout(() => { t.style.opacity = 0; }, 2600);
+  }
+  async function act(fn, okMsg) {
+    try { await fn(); await Store.load(); renderDash(); if (okMsg) toast(okMsg); return true; }
+    catch (e) { if (e.message !== "relogin") toast("⚠️ " + e.message, true); return false; }
+  }
 
   /* ---------- LOGIN ---------- */
   function renderLogin(err) {
+    clearInterval(refreshTimer);
     app.innerHTML = `
       <div class="st-login">
         <div class="st-login-card">
@@ -104,25 +116,46 @@
             <div class="st-pass"><input name="p" type="password" required placeholder="••••••••">
               <button type="button" class="st-eye" onclick="var i=this.previousElementSibling;i.type=i.type==='password'?'text':'password'">👁</button></div>
             ${err ? `<div class="st-err">${esc(err)}</div>` : ""}
-            <button class="btn" type="submit" style="width:100%;margin-top:6px">🔐 Log in</button>
+            <button class="btn" type="submit" style="width:100%;margin-top:6px" id="st-login-btn">🔐 Log in</button>
           </form>
           <p class="st-note">Authorised staff only. All usernames are in small letters.</p>
         </div>
-        <div class="st-demo-banner">🧪 <b>Demo mode</b> — appointments are saved only in this browser. Connect the secure database before using with real patients.</div>
+        ${LIVE ? `<div class="st-live-banner">🟢 Connected to the clinic's secure Google Sheet</div>`
+               : `<div class="st-demo-banner">⚪ <b>Not connected yet</b> — appointments are kept only in this browser until the Google Sheet is connected.</div>`}
       </div>`;
-    document.getElementById("st-login-form").onsubmit = e => {
+    document.getElementById("st-login-form").onsubmit = async e => {
       e.preventDefault();
       const u = e.target.u.value.trim().toLowerCase(), p = e.target.p.value;
-      const acc = ACCOUNTS[u];
-      if (!acc || cyrb53(u + ":" + p) !== acc.key) return renderLogin("Incorrect username or password.");
-      user = { username: u, role: acc.role, label: acc.label };
-      ss.set(user); seedIfEmpty(); renderDash();
+      const btn = document.getElementById("st-login-btn"); btn.disabled = true; btn.textContent = "Checking…";
+      if (LIVE) {
+        try {
+          const r = await HMApi.post({ action: "login", username: u, password: p });
+          if (!r.ok) return renderLogin(r.error || "Incorrect username or password.");
+          user = Object.assign({ token: r.token }, r.user);
+        } catch (err) { return renderLogin("Could not reach the server. Check your internet and try again."); }
+      } else {
+        const acc = LOCAL_ACCOUNTS[u];
+        if (!acc || cyrb53(u + ":" + p) !== acc.key) return renderLogin("Incorrect username or password.");
+        user = { username: u, role: acc.role, label: acc.label };
+      }
+      ss.set(user); start();
     };
+  }
+
+  async function start() {
+    app.innerHTML = `<div class="st-loading">Loading appointments…</div>`;
+    try { await Store.load(); } catch (e) { if (e.message === "relogin") return; app.innerHTML = `<div class="st-loading">⚠️ ${esc(e.message)} <button class="btn btn-sm" onclick="location.reload()">Try again</button></div>`; return; }
+    renderDash();
+    clearInterval(refreshTimer);
+    if (LIVE) refreshTimer = setInterval(async () => {
+      if (document.getElementById("st-ov") || document.hidden) return;   // don't disturb an open form
+      try { await Store.load(); if (view.section === "appts") renderDash(); } catch (e) {}
+    }, 60000);
   }
 
   /* ---------- DASHBOARD ---------- */
   function renderDash() {
-    const all = visible(HMStore.all());
+    const all = visible(DATA);
     const t = today(), weekEnd = addDays(t, 6);
     const stats = {
       today: all.filter(a => a.date === t && a.status !== "Cancelled").length,
@@ -132,10 +165,11 @@
     };
     const days = [...Array(7)].map((_, i) => { const d = addDays(t, i); return { d, n: all.filter(a => a.date === d && a.status !== "Cancelled").length }; });
     const maxN = Math.max(1, ...days.map(x => x.n));
-    const roleTitle = user.role === "doctor" ? `${esc(doctorFullName(user.username))}` : user.label;
+    const roleTitle = user.role === "doctor" ? esc(myDoctor()) : esc(user.label);
 
     app.innerHTML = `
-      <div class="st-demo-banner">🧪 <b>Demo mode</b> — data is stored only in this browser. ${user.role === "admin" ? `<button class="st-link" id="st-reset">Reset demo data</button>` : ""}</div>
+      ${LIVE ? `<div class="st-live-banner">🟢 Live — shared with all staff devices · updated ${lastLoad ? lastLoad.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : ""} <button class="st-link" id="st-refresh">↻ Refresh</button></div>`
+             : `<div class="st-demo-banner">⚪ <b>Not connected yet</b> — data is kept only in this browser. Connect the Google Sheet to share it with all staff.</div>`}
       <div class="st-head">
         <div>
           <div class="st-kicker">${user.role === "doctor" ? "Psychologist dashboard" : user.role === "admin" ? "Admin dashboard" : "Reception dashboard"}</div>
@@ -149,6 +183,24 @@
         </div>
       </div>
 
+      ${user.role === "admin" ? `
+      <div class="st-sections">
+        <button data-sec="appts" class="${view.section === "appts" ? "on" : ""}">📅 Appointments</button>
+        <button data-sec="jobs" class="${view.section === "jobs" ? "on" : ""}">💼 Career openings</button>
+      </div>` : ""}
+
+      <div id="st-body"></div>
+      <div id="st-modal"></div>`;
+
+    document.getElementById("st-logout").onclick = () => { ss.clear(); user = null; renderLogin(); };
+    const nb = document.getElementById("st-new"); if (nb) nb.onclick = () => openForm();
+    const cb = document.getElementById("st-csv"); if (cb) cb.onclick = exportCSV;
+    const rf = document.getElementById("st-refresh"); if (rf) rf.onclick = () => act(async () => {}, "Updated");
+    app.querySelectorAll("[data-sec]").forEach(b => b.onclick = () => { view.section = b.dataset.sec; renderDash(); });
+
+    if (view.section === "jobs" && user.role === "admin") return renderJobs();
+
+    document.getElementById("st-body").innerHTML = `
       <div class="st-stats">
         <div class="st-stat"><span>${stats.today}</span>Today</div>
         <div class="st-stat"><span>${stats.week}</span>Next 7 days</div>
@@ -178,13 +230,8 @@
           </div>
         </div>
         <div id="st-list"></div>
-      </div>
-      <div id="st-modal"></div>`;
+      </div>`;
 
-    document.getElementById("st-logout").onclick = () => { ss.clear(); user = null; renderLogin(); };
-    const nb = document.getElementById("st-new"); if (nb) nb.onclick = () => openForm();
-    const cb = document.getElementById("st-csv"); if (cb) cb.onclick = exportCSV;
-    const rb = document.getElementById("st-reset"); if (rb) rb.onclick = () => { if (rb.dataset.sure) { HMStore.clear(); try { localStorage.removeItem("hm_demo_seeded"); } catch (e) {} seedIfEmpty(); renderDash(); } else { rb.dataset.sure = 1; rb.textContent = "Tap again to reset"; } };
     app.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { view.tab = b.dataset.tab; renderDash(); });
     const fd = document.getElementById("st-f-doc"); if (fd) fd.onchange = e => { view.doctor = e.target.value; renderList(); };
     document.getElementById("st-f-status").onchange = e => { view.status = e.target.value; renderList(); };
@@ -194,7 +241,7 @@
 
   function filtered() {
     const t = today();
-    let list = visible(HMStore.all());
+    let list = visible(DATA);
     if (view.tab === "today") list = list.filter(a => a.date === t);
     if (view.tab === "upcoming") list = list.filter(a => a.date > t);
     if (view.tab === "past") list = list.filter(a => a.date < t);
@@ -207,18 +254,21 @@
 
   function renderList() {
     const list = filtered(), box = document.getElementById("st-list");
-    if (!list.length) { box.innerHTML = `<div class="st-empty">No appointments here.</div>`; return; }
+    if (!list.length) {
+      box.innerHTML = `<div class="st-empty">${DATA.length ? "No appointments here." : "No appointments yet. New bookings from the website will appear here automatically."}</div>`;
+      return;
+    }
     box.innerHTML = `
       <div class="st-table">
         <div class="st-tr st-th"><div>Date & time</div><div>Patient</div><div>Service</div><div>Psychologist</div><div>Mode</div><div>Status</div></div>
         ${list.map(a => `
-        <div class="st-tr" data-id="${a.id}" tabindex="0">
+        <div class="st-tr" data-id="${esc(a.id)}" tabindex="0">
           <div><b>${fmtDate(a.date)}</b><small>${a.time ? esc(a.time) : esc(a.timeWindow || "")}</small></div>
           <div><b>${esc(a.name)}</b><small>${esc(a.phone)}</small></div>
           <div>${esc(a.service)}</div>
           <div>${a.doctor === "Any available psychologist" ? `<span class="st-unassigned">Not assigned</span>` : esc(a.doctor)}</div>
           <div>${esc(a.mode)}</div>
-          <div><span class="st-badge s-${a.status.toLowerCase()}">${a.status}</span></div>
+          <div><span class="st-badge s-${esc((a.status || "").toLowerCase())}">${esc(a.status)}</span></div>
         </div>`).join("")}
       </div>`;
     box.querySelectorAll(".st-tr[data-id]").forEach(r => {
@@ -229,9 +279,9 @@
 
   /* ---------- DETAIL DRAWER ---------- */
   function openDetail(id) {
-    const a = HMStore.get(id); if (!a) return;
+    const a = get(id); if (!a) return;
     const m = document.getElementById("st-modal");
-    const waMsg = `Hello ${a.name.replace(/ \(demo\)$/, "")}, your appointment at ${BASIC.siteName} is confirmed for ${fmtDate(a.date)}${a.time ? " at " + a.time : ""}${a.mode.startsWith("Online") ? " (online)" : " at our " + (BRANCHES[0] ? BRANCHES[0].name : "centre")}. Please reply to confirm.`;
+    const waMsg = `Hello ${a.name}, your appointment at ${BASIC.siteName} is confirmed for ${fmtDate(a.date)}${a.time ? " at " + a.time : ""}${(a.mode || "").startsWith("Online") ? " (online)" : " at our " + (BRANCHES[0] ? BRANCHES[0].name : "centre")}. Please reply to confirm.`;
     const phoneDigits = (a.phone || "").replace(/[^\d]/g, "");
     m.innerHTML = `
       <div class="st-overlay" id="st-ov">
@@ -239,14 +289,14 @@
           <button class="st-x" id="st-close">✕</button>
           <div class="st-kicker">Appointment</div>
           <h3>${esc(a.name)}</h3>
-          <span class="st-badge s-${a.status.toLowerCase()}">${a.status}</span>
+          <span class="st-badge s-${esc((a.status || "").toLowerCase())}">${esc(a.status)}</span>
           <dl class="st-dl">
             <dt>Phone</dt><dd><a href="tel:${esc(a.phone)}">${esc(a.phone)}</a></dd>
             ${a.email ? `<dt>Email</dt><dd>${esc(a.email)}</dd>` : ""}
             <dt>Service</dt><dd>${esc(a.service)}</dd>
             <dt>Psychologist</dt><dd>${esc(a.doctor)}</dd>
-            <dt>Mode</dt><dd>${esc(a.mode)} · ${esc(a.branch)}</dd>
-            <dt>Requested</dt><dd>${fmtDate(a.date)} · ${esc(a.timeWindow || "")}</dd>
+            <dt>Mode</dt><dd>${esc(a.mode)}${a.branch ? " · " + esc(a.branch) : ""}</dd>
+            <dt>Requested</dt><dd>${fmtDate(a.date)}${a.timeWindow ? " · " + esc(a.timeWindow) : ""}</dd>
             <dt>Exact time</dt><dd>${a.time ? esc(a.time) : "<i>Not set yet</i>"}</dd>
             <dt>Source</dt><dd>${esc(a.source || "Website")} · booked ${a.created ? new Date(a.created).toLocaleString("en-IN") : "—"}</dd>
           </dl>
@@ -282,16 +332,20 @@
         </div>
       </div>`;
     const close = () => { m.innerHTML = ""; };
+    const busy = b => { if (b) { b.disabled = true; b.dataset.t = b.textContent; b.textContent = "Saving…"; } };
     document.getElementById("st-close").onclick = close;
     document.getElementById("st-ov").onclick = e => { if (e.target.id === "st-ov") close(); };
-    m.querySelectorAll("[data-s]").forEach(b => b.onclick = () => { HMStore.update(id, { status: b.dataset.s }); renderDash(); openDetail(id); });
+    m.querySelectorAll("[data-s]").forEach(b => b.onclick = async () => { busy(b); if (await act(() => Store.update(id, { status: b.dataset.s }), "Status updated")) openDetail(id); });
     const sv = document.getElementById("st-save");
-    if (sv) sv.onclick = () => {
-      HMStore.update(id, { date: document.getElementById("st-e-date").value, time: document.getElementById("st-e-time").value, doctor: document.getElementById("st-e-doc").value });
-      renderDash(); openDetail(id);
+    if (sv) sv.onclick = async () => {
+      const patch = { date: document.getElementById("st-e-date").value, time: document.getElementById("st-e-time").value, doctor: document.getElementById("st-e-doc").value };
+      busy(sv); if (await act(() => Store.update(id, patch), "Saved")) openDetail(id);
     };
     const del = document.getElementById("st-del");
-    if (del) del.onclick = () => { if (del.dataset.sure) { HMStore.remove(id); close(); renderDash(); } else { del.dataset.sure = 1; del.textContent = "Tap again to delete"; } };
+    if (del) del.onclick = async () => {
+      if (!del.dataset.sure) { del.dataset.sure = 1; del.textContent = "Tap again to delete"; return; }
+      busy(del); await act(() => Store.remove(id), "Deleted");
+    };
   }
 
   /* ---------- NEW APPOINTMENT (phone / walk-in) ---------- */
@@ -315,29 +369,100 @@
             <label>Mode<select name="mode"><option>In-person</option><option>Online (video call)</option><option>Phone call</option></select></label>
             <label>Source<select name="source"><option>Phone</option><option>Walk-in</option><option>WhatsApp</option></select></label>
             <label>Remarks<textarea name="message" rows="3"></textarea></label>
-            <button class="btn" type="submit" style="width:100%">Save appointment</button>
+            <button class="btn" type="submit" style="width:100%" id="st-new-save">Save appointment</button>
           </form>
         </div>
       </div>`;
     const close = () => { m.innerHTML = ""; };
     document.getElementById("st-close").onclick = close;
     document.getElementById("st-ov").onclick = e => { if (e.target.id === "st-ov") close(); };
-    document.getElementById("st-new-form").onsubmit = e => {
+    document.getElementById("st-new-form").onsubmit = async e => {
       e.preventDefault(); const f = e.target;
-      HMStore.add({
+      const b = document.getElementById("st-new-save"); b.disabled = true; b.textContent = "Saving…";
+      const d = {
         name: f.name.value.trim(), phone: f.phone.value.trim(), service: f.service.value, doctor: f.doctor.value,
         date: f.date.value, time: f.time.value, timeWindow: "", mode: f.mode.value,
         branch: f.mode.value === "In-person" ? (BRANCHES[0] ? BRANCHES[0].name : "Centre") : "Online",
         message: f.message.value.trim(), source: f.source.value, status: f.time.value ? "Confirmed" : "Requested"
-      });
-      close(); view.tab = "all"; renderDash();
+      };
+      view.tab = "all";
+      if (!(await act(() => Store.create(d), "Appointment added"))) { b.disabled = false; b.textContent = "Save appointment"; }
+    };
+  }
+
+  /* ---------- CAREER OPENINGS (admin) ---------- */
+  async function renderJobs() {
+    const body = document.getElementById("st-body");
+    if (!LIVE) {
+      body.innerHTML = `<div class="st-panel"><h4>Career openings</h4><p class="st-sub">Connect the Google Sheet first — then openings you add here appear on the Careers page instantly. Until then, openings can be edited in <code>content/8-careers.js</code>.</p></div>`;
+      return;
+    }
+    body.innerHTML = `<div class="st-loading">Loading openings…</div>`;
+    try { await Store.jobs(); } catch (e) { if (e.message !== "relogin") body.innerHTML = `<div class="st-loading">⚠️ ${esc(e.message)}</div>`; return; }
+    body.innerHTML = `
+      <div class="st-panel">
+        <div class="st-toolbar"><h4 style="margin:0">Career openings <small class="st-sub">(shown on the Careers page)</small></h4>
+          <button class="btn btn-sm" id="st-job-new">＋ Add opening</button></div>
+        ${JOBS.length ? `<div class="st-jobs">${JOBS.map(j => `
+          <div class="st-job ${j.active ? "" : "off"}">
+            <div><b>${esc(j.title)}</b> ${j.active ? `<span class="st-badge s-confirmed">Live</span>` : `<span class="st-badge s-cancelled">Hidden</span>`}
+              <small>${esc(j.type)}</small><p>${esc(j.text)}</p></div>
+            <div class="st-job-btns">
+              <button class="btn btn-sm btn-outline" data-edit="${esc(j.id)}">✏️ Edit</button>
+              <button class="btn btn-sm btn-outline" data-toggle="${esc(j.id)}">${j.active ? "🙈 Hide" : "👁 Show"}</button>
+              <button class="btn btn-sm st-del" data-del="${esc(j.id)}">🗑 Remove</button>
+            </div>
+          </div>`).join("")}</div>`
+          : `<div class="st-empty">No openings yet. The Careers page shows “No openings right now” with a general application form.</div>`}
+      </div>`;
+    document.getElementById("st-job-new").onclick = () => jobForm();
+    body.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => jobForm(JOBS.find(j => j.id === b.dataset.edit)));
+    body.querySelectorAll("[data-toggle]").forEach(b => b.onclick = async () => {
+      const j = JOBS.find(x => x.id === b.dataset.toggle); b.disabled = true;
+      try { await Store.jobSave(Object.assign({}, j, { active: !j.active })); toast(j.active ? "Hidden from Careers page" : "Shown on Careers page"); renderJobs(); } catch (e) { toast("⚠️ " + e.message, true); b.disabled = false; }
+    });
+    body.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+      if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = "Tap again"; return; }
+      b.disabled = true;
+      try { await Store.jobDelete(b.dataset.del); toast("Opening removed"); renderJobs(); } catch (e) { toast("⚠️ " + e.message, true); }
+    });
+  }
+
+  function jobForm(j) {
+    j = j || { title: "", type: "", text: "", active: true };
+    const m = document.getElementById("st-modal");
+    m.innerHTML = `
+      <div class="st-overlay" id="st-ov">
+        <div class="st-drawer">
+          <button class="st-x" id="st-close">✕</button>
+          <div class="st-kicker">Career opening</div>
+          <h3>${j.id ? "Edit opening" : "Add a new opening"}</h3>
+          <form id="st-job-form" class="st-form">
+            <label>Job title *<input name="title" required value="${esc(j.title)}" placeholder="e.g. Counselling Psychologist"></label>
+            <label>Type & location<input name="type" value="${esc(j.type)}" placeholder="e.g. Full-time · Chinchwad"></label>
+            <label>Description<textarea name="text" rows="4" placeholder="Qualifications, responsibilities…">${esc(j.text)}</textarea></label>
+            <label class="st-check"><input type="checkbox" name="active" ${j.active ? "checked" : ""}> Show on the Careers page</label>
+            <button class="btn" type="submit" style="width:100%" id="st-job-save">Save opening</button>
+          </form>
+        </div>
+      </div>`;
+    const close = () => { m.innerHTML = ""; };
+    document.getElementById("st-close").onclick = close;
+    document.getElementById("st-ov").onclick = e => { if (e.target.id === "st-ov") close(); };
+    document.getElementById("st-job-form").onsubmit = async e => {
+      e.preventDefault(); const f = e.target, b = document.getElementById("st-job-save");
+      b.disabled = true; b.textContent = "Saving…";
+      try {
+        await Store.jobSave({ id: j.id, title: f.title.value.trim(), type: f.type.value.trim(), text: f.text.value.trim(), active: f.active.checked });
+        close(); toast("Opening saved — it's on the Careers page now"); renderJobs();
+      } catch (err) { toast("⚠️ " + err.message, true); b.disabled = false; b.textContent = "Save opening"; }
     };
   }
 
   /* ---------- CSV export (admin) ---------- */
   function exportCSV() {
     const cols = ["date", "time", "timeWindow", "name", "phone", "email", "service", "doctor", "mode", "branch", "status", "source", "message", "created"];
-    const rows = [cols.join(",")].concat(HMStore.all().map(a => cols.map(c => `"${String(a[c] == null ? "" : a[c]).replace(/"/g, '""')}"`).join(",")));
+    const rows = [cols.join(",")].concat(DATA.map(a => cols.map(c => `"${String(a[c] == null ? "" : a[c]).replace(/"/g, '""')}"`).join(",")));
     const blob = new Blob(["﻿" + rows.join("\n")], { type: "text/csv" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob); link.download = "healing-mind-appointments-" + today() + ".csv";
@@ -345,5 +470,6 @@
   }
 
   /* ---------- start ---------- */
-  if (user && ACCOUNTS[user.username]) { seedIfEmpty(); renderDash(); } else renderLogin();
+  const validSession = user && (LIVE ? !!user.token : !!LOCAL_ACCOUNTS[user.username]);
+  if (validSession) start(); else { ss.clear(); user = null; renderLogin(); }
 })();

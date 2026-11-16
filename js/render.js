@@ -21,6 +21,47 @@ const HMStore = {
   clear() { try { localStorage.removeItem(this.KEY); } catch (e) {} }
 };
 
+/* ---------- Live data (Google Sheet) ---------- */
+const HMApi = {
+  on() { return typeof BASIC !== "undefined" && /^https:\/\/script\.google(usercontent)?\.com\//.test(BASIC.liveDataUrl || ""); },
+  async post(body) {
+    const r = await fetch(BASIC.liveDataUrl, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) });
+    return r.json();
+  },
+  async openings() {
+    const r = await fetch(BASIC.liveDataUrl + (BASIC.liveDataUrl.includes("?") ? "&" : "?") + "action=openings");
+    const j = await r.json(); return j.ok ? j.openings : [];
+  }
+};
+
+const ICON_IG = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2.2c3.2 0 3.6 0 4.8.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.6.1 4.8s0 3.6-.1 4.8c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.6.1-4.8.1s-3.6 0-4.8-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.8c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 4.9a4.9 4.9 0 1 0 0 9.8 4.9 4.9 0 0 0 0-9.8zm0 8.1a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4zm5.1-9.4a1.1 1.1 0 1 0 0 2.3 1.1 1.1 0 0 0 0-2.3z"/></svg>`;
+const ICON_YT = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.4-1.6.5-3.2.5-4.8s-.1-3.2-.5-4.8zM9.8 15.1V8.9l5.8 3.1-5.8 3.1z"/></svg>`;
+
+/* "Watch & follow" section: latest YouTube videos (auto-updating) + Instagram card */
+function socialSection(title, sub) {
+  if (!BASIC.youtube && !BASIC.instagram) return "";
+  const uploads = BASIC.youtubeChannelId ? "UU" + BASIC.youtubeChannelId.slice(2) : "";
+  return `
+  <section class="social-sec"><div class="container">
+    <h2 class="section-title">${title}</h2>
+    <p class="section-sub">${sub}</p>
+    <div class="social-grid">
+      ${uploads ? `<div class="yt-card">
+        <div class="yt-frame"><iframe loading="lazy" src="https://www.youtube-nocookie.com/embed/videoseries?list=${uploads}" title="Latest videos from ${BASIC.siteName} on YouTube" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        <div class="yt-foot"><span>${ICON_YT} <b>${BASIC.youtubeHandle || "YouTube"}</b> · our latest videos</span>
+          <a class="btn btn-sm" href="${BASIC.youtube}?sub_confirmation=1" target="_blank" rel="noopener">Subscribe</a></div>
+      </div>` : ""}
+      <div class="ig-card">
+        <div class="ig-top"><img src="images/logo.png" alt=""><div><b>${BASIC.instagramHandle || "Instagram"}</b><small>Healing Mind · Mental wellness</small></div></div>
+        <p>Daily tips on stress, anxiety, relationships and self-care — plus updates on our workshops and events.</p>
+        <div class="ig-tiles"><span>🧘 Calm</span><span>💬 Talk</span><span>🌱 Grow</span><span>💚 Heal</span></div>
+        <a class="btn ig-btn" href="${BASIC.instagram}" target="_blank" rel="noopener">${ICON_IG} Follow on Instagram</a>
+        ${BASIC.youtube ? `<a class="btn btn-outline yt-btn2" href="${BASIC.youtube}" target="_blank" rel="noopener">${ICON_YT} Visit YouTube channel</a>` : ""}
+      </div>
+    </div>
+  </div></section>`;
+}
+
 function qs(k) {
   return new URLSearchParams(location.search).get(k) || new URLSearchParams(location.hash.split("?")[1] || "").get(k);
 }
@@ -106,7 +147,10 @@ function sharedHTML() {
         ${branchLines}
         <li>📞 <a href="${telLink(BASIC.phone1)}">${BASIC.phone1}</a> / <a href="${telLink(BASIC.phone2)}">${BASIC.phone2}</a></li>
         <li>✉️ <a href="mailto:${BASIC.email}">${BASIC.email}</a></li>
-        <li>📷 <a href="${BASIC.instagram}" target="_blank" rel="noopener">Instagram</a></li>
+        <li class="ft-social">
+          <a href="${BASIC.instagram}" target="_blank" rel="noopener" aria-label="Instagram">${ICON_IG} Instagram</a>
+          <a href="${BASIC.youtube}" target="_blank" rel="noopener" aria-label="YouTube">${ICON_YT} YouTube</a>
+        </li>
       </ul></div>
     </div>
     <div class="footer-mini-links">
@@ -334,6 +378,8 @@ const PAGES = {
     </p>
   </div></section>
 
+  ${socialSection("Watch, Learn & Follow", "Short videos and everyday tips from our psychologists — free on YouTube and Instagram.")}
+
   ${ctaBand("Take the First Step Today", "You don't have to face it alone. Book a confidential session — in person or online.")}`,
 
   about: () => `
@@ -449,14 +495,7 @@ const PAGES = {
 
   <section><div class="container">
     <p class="section-sub" style="margin-bottom:40px">${CAREERS.intro}</p>
-    ${OPENINGS.length ? `
-    <div class="grid grid-3">
-      ${OPENINGS.map(o => `<div class="card"><div class="icon">💼</div><h3>${o.title}</h3>
-        <p style="color:var(--gold);font-weight:600;font-size:.85rem;margin-bottom:8px">${o.type}</p>
-        <p>${o.text}</p></div>`).join("")}
-    </div>` : `
-    <div class="card" style="text-align:center;max-width:640px;margin:0 auto"><div class="icon" style="margin:0 auto 14px">🌱</div>
-      <h3>No openings right now</h3><p>${CAREERS.noOpenings}</p></div>`}
+    <div id="openings-box">${openingsHTML(OPENINGS)}</div>
   </div></section>
 
   <section style="padding-top:0"><div class="container"><div class="form-card">
@@ -469,10 +508,7 @@ const PAGES = {
       </div>
       <div class="form-row">
         <div class="form-group"><label>Position <span class="req">*</span></label>
-          <select name="position" required>
-            ${OPENINGS.map(o => `<option value="${o.title}">${o.title}</option>`).join("")}
-            <option value="Other / General application">Other / General application</option>
-          </select></div>
+          <select name="position" required id="position-select">${positionOptions(OPENINGS)}</select></div>
         <div class="form-group"><label>Qualification <span class="req">*</span></label><input name="qualification" required placeholder="e.g. MA Psychology"></div>
       </div>
       <div class="form-group"><label>Experience & why you'd like to join (optional)</label><textarea name="message" rows="3" placeholder="A few lines about yourself"></textarea></div>
@@ -667,8 +703,40 @@ const PAGES = {
     <div class="card" style="text-align:center"><div class="icon" style="margin:0 auto 14px">✉️</div><h3>Email</h3><p><a href="mailto:${BASIC.email}">${BASIC.email}</a><br>We reply within a day</p></div>
   </div></section>
 
+  ${socialSection("Follow Us", "Stay connected for mental-health tips, videos and workshop updates.")}
+
   ${ctaBand("Ready to begin?", "Book your confidential session in under a minute.")}`
 };
+
+/* ---------- Careers: openings (from content file, or live from the Google Sheet) ---------- */
+function escH(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function openingsHTML(list) {
+  return list.length ? `
+    <div class="grid grid-3">
+      ${list.map(o => `<div class="card"><div class="icon">💼</div><h3>${escH(o.title)}</h3>
+        <p style="color:var(--gold);font-weight:600;font-size:.85rem;margin-bottom:8px">${escH(o.type)}</p>
+        <p>${escH(o.text).replace(/\n/g, "<br>")}</p>
+        <button class="btn btn-sm" style="margin-top:12px" onclick="applyFor('${escH(o.title).replace(/'/g, "\\'")}')">Apply for this role</button></div>`).join("")}
+    </div>` : `
+    <div class="card" style="text-align:center;max-width:640px;margin:0 auto"><div class="icon" style="margin:0 auto 14px">🌱</div>
+      <h3>No openings right now</h3><p>${CAREERS.noOpenings}</p></div>`;
+}
+function positionOptions(list) {
+  return list.map(o => `<option value="${escH(o.title)}">${escH(o.title)}</option>`).join("") + `<option value="Other / General application">Other / General application</option>`;
+}
+function applyFor(title) {
+  const sel = document.getElementById("position-select"); if (sel) sel.value = title;
+  const f = sel && sel.form; if (f) f.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+async function loadLiveOpenings() {
+  const box = document.getElementById("openings-box"); if (!box || !HMApi.on()) return;
+  try {
+    const live = await HMApi.openings();
+    const all = OPENINGS.concat(live || []);
+    box.innerHTML = openingsHTML(all);
+    const sel = document.getElementById("position-select"); if (sel) sel.innerHTML = positionOptions(all);
+  } catch (e) { /* keep the content-file openings */ }
+}
 
 /* ---------- Booking form helpers ---------- */
 function onDoctorChange(sel) {
@@ -710,12 +778,18 @@ function submitAppointment(e) {
     "⏰ Preferred time: " + val("time") + "\n" +
     (val("message") ? "📝 Remarks: " + val("message") + "\n" : "") +
     "----------------------------------\nSent from the website appointment form.";
-  HMStore.add({
+  const booking = {
     name: val("name"), phone: val("phone"), email: val("email"), service: val("service"), doctor: val("doctor"),
     branch: val("branch"), mode: val("mode"), date: val("date"), timeWindow: val("time"), time: "",
     message: val("message"), status: "Requested", source: "Website"
-  });
+  };
   window.open(waLink(msg), "_blank");
+  if (HMApi.on()) {
+    // saved straight into the clinic's Google Sheet → shows in Staff Login on every device
+    try { fetch(BASIC.liveDataUrl, { method: "POST", mode: "no-cors", keepalive: true, headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "book", data: booking }) }); } catch (err) {}
+  } else {
+    HMStore.add(booking);   // not connected yet: kept only in this browser
+  }
   const ok = document.getElementById("form-success");
   if (ok) ok.style.display = "block";
   return false;
@@ -962,6 +1036,7 @@ document.addEventListener("keydown", e => {
 sharedHTML();
 document.getElementById("main").innerHTML = PAGES[document.body.dataset.page]();
 initLiveGoogleReviews();
+loadLiveOpenings();
 
 /* Post-render extras */
 (function () {
