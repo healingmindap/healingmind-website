@@ -43,7 +43,7 @@ var BASIC = {
   // When filled: website bookings go into the Google Sheet, the Staff Login shows
   // real appointments on every device, and admin can add/remove job openings.
   // Leave "" until the Google Sheet is set up.
-  liveDataUrl: "",
+  liveDataUrl: "https://script.google.com/macros/s/AKfycbzOHfOdi55TLnF4MAKG8itY1kQa9soR3MG_SD13RjgD_c77esWnLWCifKu6nSZSdrn0/exec",
 
   // Footer short description
   footerText: "A platform where you can find support for life's challenges. Take a step forward to help yourself."
