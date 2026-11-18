@@ -1003,3 +1003,11 @@ nav.main-nav a.nav-login { white-space: nowrap; }
 .st-job-btns { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
 .st-check { display: flex !important; align-items: center; gap: 8px; flex-direction: row !important; }
 .st-check input { width: auto !important; }
+
+/* ---------- Full logo (used exactly as designed) ---------- */
+.brand img { width: auto; height: 84px; }
+header.scrolled .brand img, .scrolled .brand img { height: 70px; }
+.footer-logo img { width: 190px !important; height: auto !important; max-width: 100%; border-radius: 0 !important; background: none !important; }
+@media (max-width: 760px) { .brand img { height: 62px; } }
+.footer-logo img { box-shadow: none !important; padding: 0 !important; }
+.st-logo { width: 170px !important; height: auto !important; }
