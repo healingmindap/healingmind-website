@@ -87,9 +87,7 @@ function sharedHTML() {
   document.getElementById("header").innerHTML = `
   <div class="nav-wrap">
     <a class="brand" href="index.html">
-      <img src="images/logo.png" alt="${BASIC.siteName} logo">
-      <span><span class="brand-name">${BASIC.siteName}</span><br>
-      <span class="brand-tag">${BASIC.siteTagline}</span></span>
+      <img src="images/logo.png" alt="${BASIC.siteName} ${BASIC.siteTagline} logo">
     </a>
     <button class="nav-toggle" onclick="document.querySelector('.main-nav').classList.toggle('open')" aria-label="Menu">☰</button>
     <nav class="main-nav"><ul>
@@ -122,7 +120,7 @@ function sharedHTML() {
   <div class="container">
     <div class="footer-grid">
       <div>
-        <div class="footer-logo"><img src="images/logo.png" alt="logo"><strong style="color:#fff">${BASIC.siteName}<br>${BASIC.siteTagline}</strong></div>
+        <div class="footer-logo"><img src="images/logo.png" alt="${BASIC.siteName} logo"></div>
         <p>${BASIC.footerText}</p>
       </div>
       <div class="ft-col-links"><h4>Quick Links</h4><ul>
