@@ -16,7 +16,6 @@ var CONDITIONS = [
   { name: "PTSD", icon: "🕊️", image: "PTSD.jpeg",                    text: "Flashbacks, nightmares and fear after a frightening or life-threatening event." },
   { name: "Trauma", icon: "🌱", image: "Trauma.jpeg",                  text: "Emotional effects of painful experiences such as abuse, loss, accidents or neglect." },
   { name: "Personality Disorders", icon: "🧩", image: "Personality disorder.jpeg",   text: "Long-standing patterns in emotions, relationships and behaviour, including BPD." },
-  { name: "Substance Use", icon: "🔗", image: "Substance use.jpeg",           text: "Dependence on alcohol, drugs, smoking or other substances, and its effects." },
   { name: "Relationship Issues", icon: "💞", image: "Relationship issues.jpeg",     text: "Conflict, distance or breakdown in marriage, family or other close relationships." }
 ];
 

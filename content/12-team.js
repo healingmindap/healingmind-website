@@ -21,7 +21,7 @@ var TEAM = {
       role: "Founder · Psychologist & Psychotherapist",
       image: "psychologist.jpg",
       qualifications: "Member of CCI & ICA",
-      specialities: ["Counselling & Psychotherapy", "Anxiety", "De-addiction", "Adolescents"],
+      specialities: ["Counselling & Psychotherapy", "Anxiety", "Habit & Behavioural Concerns", "Adolescents"],
       languages: "English · हिंदी · मराठी",
       mode: "In-person (Chinchwad) & Online",
       bio: "Pragya Rakesh Singh is a dedicated psychologist and psychotherapist with a strong commitment to mental well-being. A member of the CCI and ICA, she combines professional expertise with compassionate care to support individuals on their journey to emotional healing and growth."
@@ -32,10 +32,10 @@ var TEAM = {
       bookAs: "Pooja",
       role: "Psychologist & Psychotherapist",
       image: "pooja.jpg",
-      specialities: ["Addiction Treatment", "BPD", "and more"],
+      specialities: ["Behavioural Addiction", "BPD", "and more"],
       mode: "Online sessions only",
       onlineOnly: true,
-      bio: "Pooja Gahlot is a psychologist and psychotherapist specialising in addiction treatment and Borderline Personality Disorder (BPD), along with other emotional and behavioural concerns. She works with clients through online sessions."
+      bio: "Pooja Gahlot is a psychologist and psychotherapist specialising in behavioural addiction and Borderline Personality Disorder (BPD), along with other emotional and behavioural concerns. She works with clients through online sessions."
     },
 
     {

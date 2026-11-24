@@ -33,9 +33,9 @@ var SERVICES = [
     image: "Personality disorder.jpeg",
     text: "Specialised therapy for intense emotions, unstable relationships and impulsive behaviour, including DBT-based skills." },
 
-  { icon: "🔗", name: "Addiction Management",
+  { icon: "🔗", name: "Behavioural Addiction Support",
     image: "Addiction.jpeg",
-    text: "Support to overcome alcohol, substance, smoking, gaming or mobile addiction, with relapse prevention and family guidance." },
+    text: "Support to overcome gaming, mobile, screen and smoking habits, with relapse prevention and family guidance." },
 
   { icon: "🌤️", name: "Phobia",
     image: "Phobia.jpeg",

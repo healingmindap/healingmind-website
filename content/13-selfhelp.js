@@ -37,7 +37,7 @@ var SELFHELP = {
   whenToSeek: [
     "Feeling low, anxious or irritable most days for more than 2 weeks",
     "Sleep, appetite, studies or work are clearly affected",
-    "Using alcohol, smoking, screens or substances to cope",
+    "Relying on screens, smoking or other habits to cope",
     "Relationships at home or work are getting strained",
     "Thoughts of hurting yourself — please reach out today"
   ]
