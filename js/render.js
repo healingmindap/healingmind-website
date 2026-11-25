@@ -1213,3 +1213,36 @@ loadLiveOpenings();
     }, 200);
   }
 })();
+
+/* ---------- Google Ads conversion tracking ----------
+   Counts clicks on Call / WhatsApp / the booking form.
+   Sends no names, numbers, message text or page query data.
+   Everything is wrapped in try/catch so it can never break the site. */
+(function () {
+  var SEND_TO = 'AW-18147736876/VcbKCIKr874dEKz6wc1D';
+  var fired = {};
+  function track(kind) {
+    try {
+      if (fired[kind]) return;
+      fired[kind] = true;
+      if (typeof gtag !== 'function') return;
+      gtag('event', 'conversion', {
+        send_to: SEND_TO,
+        page_location: location.origin + location.pathname
+      });
+    } catch (e) {}
+  }
+  document.addEventListener('click', function (ev) {
+    try {
+      var a = ev.target && ev.target.closest ? ev.target.closest('a') : null;
+      if (!a || !a.href) return;
+      if (a.href.indexOf('tel:') === 0) track('call');
+      else if (a.href.indexOf('wa.me') > -1) track('whatsapp');
+    } catch (e) {}
+  }, true);
+  document.addEventListener('submit', function (ev) {
+    try {
+      if (ev.target && ev.target.tagName === 'FORM') track('form');
+    } catch (e) {}
+  }, true);
+})();
