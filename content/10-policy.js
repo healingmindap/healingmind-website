@@ -23,5 +23,8 @@ var POLICY = [
     text: "Our centre is not an emergency service. If you or someone you know is in immediate danger or crisis, please contact a hospital emergency department, or call a 24x7 helpline such as Tele-MANAS 14416 (Govt. of India) right away." },
 
   { title: "Respectful Environment",
-    text: "We are committed to a safe, non-judgmental space for every client regardless of gender, religion, caste, language or background — and we ask the same respect towards our staff and other visitors." }
+    text: "We are committed to a safe, non-judgmental space for every client regardless of gender, religion, caste, language or background — and we ask the same respect towards our staff and other visitors." },
+
+  { title: "Website, Cookies & Advertising",
+    text: "Our website uses Google's advertising tag so we can see how many people contact us after seeing one of our ads. It records only that a Call, WhatsApp or Book Appointment button was clicked. It does not record your name, phone number, the message you write, or which conditions or pages you read. We do not use your visit to follow you with ads elsewhere, and website data is never shared with anyone for marketing. You can block these cookies in your browser settings and the site will still work normally." }
 ];
