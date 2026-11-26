@@ -35,7 +35,7 @@ var SERVICES = [
 
     { icon: "📱", name: "Habit & Screen-Use Support",
     image: "Stress.jpeg",
-    text: "Support to cut back on gaming, mobile and screen habits or smoking, with practical strategies and family guidance." },
+        text: "Support to cut back on gaming, mobile and screen habits, with practical strategies and family guidance." },
 
   { icon: "🌤️", name: "Phobia",
     image: "Phobia.jpeg",
