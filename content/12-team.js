@@ -32,10 +32,10 @@ var TEAM = {
       bookAs: "Pooja",
       role: "Psychologist & Psychotherapist",
       image: "pooja.jpg",
-      specialities: ["Behavioural Addiction", "BPD", "and more"],
+            specialities: ["Habit & Behavioural Concerns", "BPD", "and more"],
       mode: "Online sessions only",
       onlineOnly: true,
-      bio: "Pooja Gahlot is a psychologist and psychotherapist specialising in behavioural addiction and Borderline Personality Disorder (BPD), along with other emotional and behavioural concerns. She works with clients through online sessions."
+            bio: "Pooja Gahlot is a psychologist and psychotherapist specialising in habit-related and behavioural concerns and Borderline Personality Disorder (BPD), along with other emotional concerns. She works with clients through online sessions."
     },
 
     {
